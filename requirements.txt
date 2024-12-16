@@ -1,0 +1,7 @@
+# streamlit
+# pandas
+# requests
+echo "flask
+pandas
+requests
+gunicorn" > requirements.txt
