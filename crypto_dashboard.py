@@ -2,6 +2,7 @@ from flask import Flask, render_template_string
 import requests
 import pandas as pd
 from typing import List
+import os
 
 app = Flask(__name__)
 
@@ -149,17 +150,25 @@ def get_crypto_ranking(time_period: str) -> pd.DataFrame:
         response = requests.get(url, params=parameters)
         data = response.json()
         
+        if not isinstance(data, list):
+            print(f"API 응답 형식 오류: {data}")
+            return pd.DataFrame()
+            
         crypto_data = []
         for coin in data:
-            change_key = f'price_change_percentage_{time_period}_in_currency'
-            if coin.get(change_key) is not None:
-                crypto_data.append({
-                    '순위': coin.get('market_cap_rank', 'N/A'),
-                    '이름': coin.get('name', 'N/A'),
-                    '심볼': coin.get('symbol', 'N/A').upper(),
-                    '가격': coin.get('current_price', 0),
-                    f'{time_period} 변동률': coin[change_key]
-                })
+            try:
+                price_change_key = f'price_change_percentage_{time_period}'
+                if isinstance(coin, dict) and price_change_key in coin:
+                    crypto_data.append({
+                        '순위': coin.get('market_cap_rank', 'N/A'),
+                        '이름': coin.get('name', 'N/A'),
+                        '심볼': coin.get('symbol', 'N/A').upper(),
+                        '가격': coin.get('current_price', 0),
+                        f'{time_period} 변동률': coin[price_change_key]
+                    })
+            except Exception as e:
+                print(f"코인 데이터 처리 오류: {e}")
+                continue
         
         df = pd.DataFrame(crypto_data)
         if not df.empty:
@@ -167,7 +176,7 @@ def get_crypto_ranking(time_period: str) -> pd.DataFrame:
         return df
     
     except Exception as e:
-        print(f"에러 발생: {e}")
+        print(f"API 요청 오류: {e}")
         return pd.DataFrame()
 
 def get_top_10_by_market_cap() -> List[str]:
@@ -274,4 +283,5 @@ def home():
     )
 
 if __name__ == '__main__':
-    app.run(debug=False, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
