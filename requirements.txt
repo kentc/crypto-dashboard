@@ -1,7 +1,4 @@
-# streamlit
-# pandas
-# requests
-echo "flask
+flask
 pandas
 requests
-gunicorn" > requirements.txt
+gunicorn
